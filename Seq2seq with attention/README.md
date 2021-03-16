@@ -28,7 +28,7 @@
 
   - 如下图仅仅显示Decoder一个输入的情况，$w$为经过$attention$机制后的$context$向量，$z$为Decoder上一时刻的隐藏层状态$S_{t-1}$
 
-  <img src="C:\Users\leaves\AppData\Roaming\Typora\typora-user-images\image-20210316113128904.png" alt="image-20210316113128904" style="zoom:50%;" />
+  <img src="C:\Users\leaves\Desktop\Github_project\Seq2seq with attention\img\image-20210316113128904.png" alt="image-20210316113128904" style="zoom:50%;" />
 
   - 相关计算公式：
 
