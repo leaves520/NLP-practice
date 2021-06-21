@@ -25,7 +25,7 @@ class Word2Vec(nn.Module):
         neg_embedding = neg_embedding.view(batch_size,Embedding_Size,-1)
 
         pos_loss = torch.bmm(input_embedding,pos_embedding).squeeze(1) # batch_size,window_size * 2
-        neg_loss = torch.bmm(input_embedding,- neg_embedding).squeeze(1) # batch_size,window_size * 2 * k
+        neg_loss = torch.bmm(input_embedding,-neg_embedding).squeeze(1) # batch_size,window_size * 2 * k
 
         pos_loss = torch.sigmoid(pos_loss).log().sum(1)
         neg_loss = torch.sigmoid(neg_loss).log().sum(1)
