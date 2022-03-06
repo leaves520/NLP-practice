@@ -1,6 +1,6 @@
 import numpy as np
 from hmmlearn import hmm
-# 有三个模型，GaussianHMM,GMMHMM，用于连续型变量
+# 有三个模型，GaussianHMM,GMM, HMM，用于连续型变量
 # 下面采用的是多项式HMM，是离散变量
 
 states = ["晴","雨","阴"]
