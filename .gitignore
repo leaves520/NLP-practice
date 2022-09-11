@@ -1,0 +1,6 @@
+.idea
+bert_text_classification/multi_task/albert/
+bert_text_classification/multi_task/badcase/
+bert_text_classification/multi_task/model_file/
+bert_text_classification/multi_task/data/
+classical_text_classification/data_im/
