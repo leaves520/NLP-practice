@@ -191,7 +191,7 @@ class ConfigTextCNN(object):
 
         # 体验不佳场景最优
         self.dropout = 0.5                                              # 随机失活
-        self.require_improvement = 100                                # 若超过1000batch效果还没提升，则提前结束训练
+        self.require_improvement = 200                                # 若超过1000batch效果还没提升，则提前结束训练
         self.num_classes = len(self.class_list)                         # 类别数
         self.n_vocab = 0                                                # 词表大小，在运行时赋值
         self.num_epochs = 1000                                         # epoch数
@@ -202,7 +202,7 @@ class ConfigTextCNN(object):
         self.embed = self.embedding_pretrained.size(1)\
             if self.embedding_pretrained is not None else 300           # 字向量维度
         self.filter_sizes = (2, 3)                                   # 卷积核尺寸
-        self.num_filters = 64                                         # 卷积核数量(channels数)
+        self.num_filters = 32                                         # 卷积核数量(channels数)
 
 
 

@@ -8,7 +8,48 @@ import time
 from datetime import timedelta
 import jieba
 # from snownlp import SnowNLP
-import pycantonese
+# import pycantonese
+import re
+def clean_data(desstr,restr=''):
+    # 过滤制表空格
+    desstr = re.sub('\u200d','',desstr)
+
+    # 过滤左右空格
+    desstr = re.sub('\\s{1,}|\t','', desstr)
+
+    #过滤表情
+    try:
+        co = re.compile(u'['u'\U0001F300-\U0001F64F' u'\U0001F680-\U0001F6FF'u'\u2600-\u2B55]+')
+    except re.error:
+        co = re.compile(u'('u'\ud83c[\udf00-\udfff]|'u'\ud83d[\udc00-\ude4f\ude80-\udeff]|'u'[\u2600-\u2B55])+')
+
+    desstr = co.sub(restr, desstr)
+
+    # 过滤订单号:
+    desstr = re.sub('訂單.{0,4}\d{11}','', desstr)
+
+    # 过滤单个数字:
+    desstr = re.sub('\d[,.。，]', '', desstr)
+
+    # 过滤 
+    desstr = re.sub(' ','', desstr)
+
+    # 过滤邮箱
+    desstr = re.sub('[^\u4e00-\u9fa5]*@.*com','', desstr)
+
+    # 过滤年月日
+    desstr = re.sub('[0-9]{4}年[0-9]{1,2}月[0-9]{1,2}日[0-9]{1,2}:[0-9]{1,2}','', desstr)
+    desstr = re.sub('[0-9]+/[0-9]+/[0-9]+','', desstr)
+    desstr = re.sub('[0-9]+/[0-9]+.{0,4}[0-9]+/[0-9]+','',desstr)
+
+    # 重复标点符号过滤：
+    desstr = re.sub('[!,.。，！?？]+',',', desstr)
+
+    # 过滤无用符号：
+    desstr = re.sub('[{}$/’：:-]+','',desstr)
+
+    return desstr
+
 
 MAX_VOCAB_SIZE = 10000  # 词表长度限制
 UNK, PAD = '<UNK>', '<PAD>'  # 未知字，padding符号
@@ -34,10 +75,11 @@ def build_dataset(config, use_word):
     # 分词的方式，是按字分还是按词分
     if use_word:
         # tokenizer = lambda x: x.split(' ')  # 以空格隔开，word-level
-        # with open(r'D:\Users\xbye\Desktop\Chinese-Text-Classification-Pytorch-master\data_im_体验不佳\data\vocab.pkl','rb') as f:
-        #     jieba.load_userdict(pkl.load(f))
-        # tokenizer = lambda x : list(jieba.cut(x))  # jieba分词
-        tokenizer = lambda x: pycantonese.segment(x)  # 使用pycantonese
+        with open(r'F:\工作与学习文件\Github_project\NLP-practice\classical_text_classification'
+                  r'\data_im\data\vocab_freq.txt','r', encoding='utf-8-sig') as f:
+            jieba.load_userdict(f)
+        tokenizer = lambda x : list(jieba.cut(x))  # jieba分词
+        # tokenizer = lambda x: pycantonese.segment(x)  # 使用pycantonese
         print('Use word for spliting..')
     else:
         tokenizer = lambda x: [y for y in x]  # char-level
@@ -63,9 +105,12 @@ def build_dataset(config, use_word):
                 except:
                     continue
 
+                rawcontext = content
                 # # # 去除英文文本
-                # import re
-                # content = re.sub('[a-zA-Z]+','',content)
+                content = clean_data(content)
+                content = re.sub('當前諮詢.*details', '', content)
+                content = re.sub('[a-zA-Z]+','',content)
+
                 # content = re.sub('[.。,，!！？?]+', '', content)
 
                 # # 繁转简中
@@ -116,13 +161,14 @@ def build_dataset(config, use_word):
                     if len(token) < pad_size:
                         token.extend([PAD] * (pad_size - len(token)))
                     else:
-                        token = token[:pad_size]
+                        # token = token[:pad_size]
+                        token = token[-pad_size:]
                         seq_len = pad_size
 
                 # word to id
                 for word in token:
                     words_line.append(vocab.get(word, vocab.get(UNK)))
-                contents.append((words_line, int(label), seq_len, content))
+                contents.append((words_line, int(label), seq_len, rawcontext))
 
         return contents  # [([...], 0), ([...], 1), ...]
 

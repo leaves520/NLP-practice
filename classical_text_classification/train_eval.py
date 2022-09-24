@@ -99,9 +99,18 @@ def train(config, model, train_iter, dev_iter, test_iter):
             else:
                 loss = Rdroploss(outputs, labels)
 
-            model.zero_grad()
             loss.backward()
+
+            # 对抗训练
+            model.attack(0.3)
+            loss_adv =  Rdroploss(model(trains), labels)
+            loss_adv.backward(retain_graph=True)
+            model.restore()
+
+            # 梯度更新
             optimizer.step()
+            model.zero_grad()
+
             if total_batch % 5 == 0:
                 # 每多少轮输出在训练集和验证集上的效果
                 true = labels.data.cpu()
@@ -113,11 +122,6 @@ def train(config, model, train_iter, dev_iter, test_iter):
                     torch.save(model.state_dict(), config.save_path)
                     improve = '*'
                     last_improve = total_batch
-                # if dev_acc > dev_best_acc:
-                #     dev_best_acc = dev_acc
-                #     torch.save(model.state_dict(), config.save_path)
-                #     improve = '*'
-                #     last_improve = total_batch
                 else:
                     improve = ''
 
