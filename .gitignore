@@ -6,3 +6,5 @@ bert_text_classification/multi_task/data/
 bert_text_classification/data_im/
 bert_text_classification/pretrained_bert/
 classical_text_classification/data_im/
+classical_text_classification/__pycache__/
+bert_text_classification/__pycache__/
