@@ -9,9 +9,11 @@ from utils import get_time_dif
 from tensorboardX import SummaryWriter
 import logging
 import os
+from Contract_loss import SupConLoss
 
 ce = torch.nn.CrossEntropyLoss()
 kld = torch.nn.KLDivLoss(reduction="none")
+suploss = SupConLoss(temperature=0.1, scale_by_temperature=True)
 
 def Rdroploss(y_pred, y_true, alpha=4):
     """配合R-Drop的交叉熵损失"""
@@ -93,11 +95,15 @@ def train(config, model, train_iter, dev_iter, test_iter):
         config.logger.info('Epoch [{}/{}]'.format(epoch + 1, config.num_epochs))
         for i, (trains, labels, _) in enumerate(train_iter):
 
+            # outputs, sample_feature = model(trains)
             outputs = model(trains)
             if config.rdrop == False:
                 loss = F.cross_entropy(outputs, labels)
             else:
                 loss = Rdroploss(outputs, labels)
+
+            # loss_sup = suploss(sample_feature, labels=labels)
+            # loss = loss + loss_sup
 
             loss.backward()
 
@@ -119,6 +125,7 @@ def train(config, model, train_iter, dev_iter, test_iter):
                 dev_acc, dev_loss = evaluate(config, model, dev_iter)
                 if dev_loss < dev_best_loss:
                     dev_best_loss = dev_loss
+                    dev_best_acc = dev_acc
                     torch.save(model.state_dict(), config.save_path)
                     improve = '*'
                     last_improve = total_batch
@@ -141,7 +148,7 @@ def train(config, model, train_iter, dev_iter, test_iter):
                 break
 
         if flag:
-            torch.save(model.state_dict(), config.save_path.replace('.ckpt', f'-acc{dev_acc}.ckpt'))
+            torch.save(model.state_dict(), config.save_path.replace('.ckpt', f'-acc{dev_best_acc}.ckpt'))
             break
 
     writer.close()

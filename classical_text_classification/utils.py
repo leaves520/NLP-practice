@@ -1,5 +1,7 @@
 # coding: UTF-8
 import os
+import random
+
 import torch
 import numpy as np
 import pickle as pkl
@@ -9,6 +11,8 @@ from datetime import timedelta
 import jieba
 # from snownlp import SnowNLP
 # import pycantonese
+from nlpcda import Randomword, Homophone, Similarword, RandomDeleteChar
+
 import re
 def clean_data(desstr,restr=''):
     # 过滤制表空格
@@ -16,6 +20,13 @@ def clean_data(desstr,restr=''):
 
     # 过滤左右空格
     desstr = re.sub('\\s{1,}|\t','', desstr)
+
+
+    # # 过滤转人工前
+    # tmp = re.search('轉人工|人工|真人', desstr)
+    # if tmp:
+    #     span = tmp.span()[-1]
+    #     desstr = desstr[span:]
 
     #过滤表情
     try:
@@ -44,9 +55,14 @@ def clean_data(desstr,restr=''):
 
     # 重复标点符号过滤：
     desstr = re.sub('[!,.。，！?？]+',',', desstr)
+    # desstr = re.sub('[!,.。，！]+',',', desstr)
+    # desstr = re.sub('[？?],','?',desstr)
 
     # 过滤无用符号：
     desstr = re.sub('[{}$/’：:-]+','',desstr)
+
+    # 过滤开头的符号
+    desstr = re.sub('^,','', desstr)
 
     return desstr
 
@@ -93,7 +109,7 @@ def build_dataset(config, use_word):
     print(f"Vocab size: {len(vocab)}")
 
 
-    def load_dataset(path, pad_size=300):  # 创建word2idx后的数据集
+    def load_dataset(path, pad_size=300, add=False):  # 创建word2idx后的数据集
         contents = []
         with open(path, 'r', encoding='UTF-8') as f:
             for line in tqdm(f):
@@ -170,9 +186,31 @@ def build_dataset(config, use_word):
                     words_line.append(vocab.get(word, vocab.get(UNK)))
                 contents.append((words_line, int(label), seq_len, rawcontext))
 
+                if add:
+                    smw = RandomDeleteChar(create_num=2, change_rate=0.3)
+                    rs1 = smw.replace(content)
+                    for content in rs1:
+                        words_line = []
+                        token = tokenizer(content)
+
+                        seq_len = len(token)
+                        if pad_size:
+                            if len(token) < pad_size:
+                                token.extend([PAD] * (pad_size - len(token)))
+                            else:
+                                # token = token[:pad_size]
+                                token = token[-pad_size:]
+                                seq_len = pad_size
+
+                        # word to id
+                        for word in token:
+                            words_line.append(vocab.get(word, vocab.get(UNK)))
+                        contents.append((words_line, int(label), seq_len, content))
+
         return contents  # [([...], 0), ([...], 1), ...]
 
-    train = load_dataset(config.train_path, config.pad_size)
+    # train = load_dataset(config.train_path, config.pad_size)
+    train = load_dataset(config.train_path, config.pad_size, add=False)
     dev = load_dataset(config.dev_path, config.pad_size)
     test = load_dataset(config.test_path, config.pad_size)
 
@@ -220,6 +258,7 @@ class DatasetIterater(object):
 
         elif self.index >= self.n_batches:
             self.index = 0
+            # self.shuffle_data(self.batches)
             raise StopIteration
         else:
             batches = self.batches[self.index * self.batch_size: (self.index + 1) * self.batch_size]
@@ -236,7 +275,11 @@ class DatasetIterater(object):
         else:
             return self.n_batches
 
-
+    def shuffle_data(self, data):
+        index = list(range(len(data)))
+        random.shuffle(index)
+        ran_data = [data[_] for _ in index]
+        self.batches = ran_data
 
 def build_iterator(dataset, config, rdrop=False):
     iter = DatasetIterater(dataset, config.batch_size, config.device, rdrop=rdrop)
