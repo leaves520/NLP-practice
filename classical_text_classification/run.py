@@ -19,7 +19,6 @@ if __name__ == '__main__':
     rdrop = True # 训练集是否使用rdrop
     dataset = 'data_im'  # 数据集
     embedding = 'embedding_wiki_zhe_yue.npy'
-    # embedding = 'embedding_wiki_simple.npy'
     model_name = args.model
 
 

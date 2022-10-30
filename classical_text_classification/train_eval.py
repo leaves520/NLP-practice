@@ -26,7 +26,6 @@ def Rdroploss(y_pred, y_true, alpha=4):
 
 
 
-
 def get_logger(filename, verbosity=1, name=None):
     level_dict = {0: logging.DEBUG, 1: logging.INFO, 2: logging.WARNING}
     formatter = logging.Formatter(
@@ -46,7 +45,7 @@ def get_logger(filename, verbosity=1, name=None):
     return logger
 
 
-# 权重初始化，默认xavier
+# 权重初始化，默认xavier，exclude=表示除这个参数名外其余均要重置
 def init_network(model, method='xavier', exclude='embedding', seed=123):
     for name, w in model.named_parameters():
         if exclude not in name:
@@ -107,11 +106,11 @@ def train(config, model, train_iter, dev_iter, test_iter):
 
             loss.backward()
 
-            # 对抗训练
-            model.attack(0.3)
-            loss_adv =  Rdroploss(model(trains), labels)
-            loss_adv.backward(retain_graph=True)
-            model.restore()
+            # # 对抗训练
+            # model.attack(0.3)
+            # loss_adv =  Rdroploss(model(trains), labels)
+            # loss_adv.backward(retain_graph=True)
+            # model.restore()
 
             # 梯度更新
             optimizer.step()
@@ -203,8 +202,9 @@ def evaluate(config, model, data_iter, test=False):
         da.text = all_cons
         da.gold = labels_all
         da.predict = predict_all
+        da = da.drop_duplicates(subset=['text','gold','predict'])
+        da['isSame'] = (da.gold == da.predict)
         # da = da[da['gold']!=da['predict']]
-
         da.to_excel(f'./{config.log_path}/badcase.xlsx')
 
         return acc, loss_total / len(data_iter), report, confusion
