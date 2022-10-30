@@ -203,7 +203,8 @@ def evaluate(config, model, data_iter, test=False):
         da.text = all_cons
         da.gold = labels_all
         da.predict = predict_all
-        da = da[da['gold']!=da['predict']]
+        # da = da[da['gold']!=da['predict']]
+
         da.to_excel(f'./{config.log_path}/badcase.xlsx')
 
         return acc, loss_total / len(data_iter), report, confusion

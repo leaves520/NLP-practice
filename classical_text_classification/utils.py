@@ -12,8 +12,48 @@ import jieba
 # from snownlp import SnowNLP
 # import pycantonese
 from nlpcda import Randomword, Homophone, Similarword, RandomDeleteChar
-
 import re
+
+
+def getPycantonese(words, vocab, token):
+# 当使用pycantonese对应的词不在时，将其按字符划分
+    def filters(words):
+        def is_number(s):
+            try:
+                float(s)
+                return True
+            except ValueError:
+                pass
+            try:
+                import unicodedata
+                unicodedata.numeric(s)
+                return True
+            except (TypeError, ValueError):
+                pass
+            return False
+
+        def contain_zh(word):
+
+            zh_pattern = re.compile(u'[\u4e00-\u9fa5]+')
+            match = zh_pattern.search(word)
+
+            return match
+
+        new_tokens = []
+        for w in words:
+            if w not in vocab:
+                if not is_number(w) and contain_zh(w):
+                    for char in w:
+                        new_tokens.append(char)
+            else:
+                new_tokens.append(w)
+
+        return new_tokens
+
+    token = filters(token)
+    return token
+
+
 def clean_data(desstr,restr=''):
     # 过滤制表空格
     desstr = re.sub('\u200d','',desstr)
@@ -122,55 +162,14 @@ def build_dataset(config, use_word):
                     continue
 
                 rawcontext = content
-                # # # 去除英文文本
                 content = clean_data(content)
                 content = re.sub('當前諮詢.*details', '', content)
                 content = re.sub('[a-zA-Z]+','',content)
-
                 # content = re.sub('[.。,，!！？?]+', '', content)
 
-                # # 繁转简中
-                # s_jianti = SnowNLP(content)
-                # content = s_jianti.han
 
                 words_line = []
                 token = tokenizer(content)
-
-                # # 当使用pycantonese对应的词不在时，将其按字符划分
-                # def filters(words):
-                #     def is_number(s):
-                #         try:
-                #             float(s)
-                #             return True
-                #         except ValueError:
-                #             pass
-                #         try:
-                #             import unicodedata
-                #             unicodedata.numeric(s)
-                #             return True
-                #         except (TypeError, ValueError):
-                #             pass
-                #         return False
-                #
-                #     def contain_zh(word):
-                #
-                #         zh_pattern = re.compile(u'[\u4e00-\u9fa5]+')
-                #         match = zh_pattern.search(word)
-                #
-                #         return match
-                #
-                #     new_tokens = []
-                #     for w in words:
-                #         if w not in vocab:
-                #             if not is_number(w) and contain_zh(w):
-                #                 for char in w:
-                #                     new_tokens.append(char)
-                #         else:
-                #             new_tokens.append(w)
-                #
-                #     return new_tokens
-                # token = filters(token)
-                # # 当使用pycantonese对应的词不在时，将其按字符划分
 
                 seq_len = len(token)
                 if pad_size:
