@@ -151,15 +151,23 @@ def train(config, model, train_iter, dev_iter, test_iter):
             break
 
     writer.close()
-    test(config, model, test_iter)
+
+    # train
+    train_iter.index = 0
+    test(config, model, train_iter, name='train')
+    # dev
+    dev_iter.index = 0
+    test(config, model, dev_iter, name='dev')
+    # test
+    test(config, model, test_iter, name='test')
 
 
-def test(config, model, test_iter):
+def test(config, model, test_iter, name='test'):
     # test
     model.load_state_dict(torch.load(config.save_path))
     model.eval()
     start_time = time.time()
-    test_acc, test_loss, test_report, test_confusion = evaluate(config, model, test_iter, test=True)
+    test_acc, test_loss, test_report, test_confusion = evaluate(config, model, test_iter, test=True, name=name)
     msg = 'Test Loss: {0:>5.2},  Test Acc: {1:>6.2%}'
     config.logger.info(msg.format(test_loss, test_acc))
     config.logger.info("Precision, Recall and F1-Score...")
@@ -170,7 +178,7 @@ def test(config, model, test_iter):
     config.logger.info(f"Time usage:{time_dif}")
 
 
-def evaluate(config, model, data_iter, test=False):
+def evaluate(config, model, data_iter, test=False, name='test'):
     model.eval()
     loss_total = 0
     predict_all = np.array([], dtype=int)
@@ -205,7 +213,7 @@ def evaluate(config, model, data_iter, test=False):
         da = da.drop_duplicates(subset=['text','gold','predict'])
         da['isSame'] = (da.gold == da.predict)
         # da = da[da['gold']!=da['predict']]
-        da.to_excel(f'./{config.log_path}/badcase.xlsx')
+        da.to_excel(f'./{config.log_path}/badcase_{name}.xlsx')
 
         return acc, loss_total / len(data_iter), report, confusion
     return acc, loss_total / len(data_iter)
